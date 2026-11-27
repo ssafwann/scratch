@@ -8,6 +8,8 @@ Scratch targets macOS 14 and later on Apple silicon and Intel. See the [product 
 
 Open `Scratch.xcodeproj` in Xcode, select the Scratch scheme, and press Cmd+R. The current panel spike uses sample tasks to exercise focus, pinning, and window restoration.
 
+Run the data-layer tests with `swift test --package-path ScratchData`.
+
 ## License
 
-Scratch is licensed under the [MIT License](LICENSE). The bundled icons are covered by the [Lucide license notices](Scratch/Lucide-LICENSE.txt).
+Scratch is licensed under the [MIT License](LICENSE). See the bundled license notices for [Lucide](Scratch/Lucide-LICENSE.txt) and [GRDB](Scratch/GRDB-LICENSE.txt).
