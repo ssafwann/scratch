@@ -37,6 +37,7 @@ struct NoteView: View {
     @Environment(\.colorScheme) private var systemColorScheme
     @AppStorage("noteAppearance") private var appearance = NoteAppearance.system
 
+    @State private var drag = TaskDrag()
     @State private var drafts: [Int64: String] = [:]
 
     private var colorScheme: ColorScheme { appearance.colorScheme ?? systemColorScheme }
@@ -77,21 +78,31 @@ struct NoteView: View {
             }
         }
         .ignoresSafeArea(.container, edges: .top)
+        .coordinateSpace(name: TaskDrag.coordinateSpace)
+        .environment(drag)
+        .onChange(of: note.list.id) { _, _ in drag.cancel() }
+        .onChange(of: note.tasks.map(\.id)) { _, ids in drag.removeStaleFrames(keeping: Set(ids)) }
+        .onChange(of: presentation.isFocused) { _, focused in
+            if !focused { drag.cancel() }
+        }
     }
 
     private var taskList: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach(note.visibleTasks) { task in
-                    TaskRow(task: task, note: note, palette: palette, isFocused: presentation.isFocused)
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(note.visibleGroups) { group in
+                    TaskGroupView(group: group, note: note, palette: palette, isFocused: presentation.isFocused)
                 }
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.vertical, 7)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .scrollIndicators(.hidden)
         .id(note.list.id)
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(TaskDrag.coordinateSpace)) } action: {
+            drag.viewport = $0
+        }
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(palette.accent.opacity(0.22))

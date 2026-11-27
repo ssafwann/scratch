@@ -8,6 +8,12 @@ final class NoteTasks: ObservableObject {
         case moveToBottom = 2
     }
 
+    struct TaskGroup: Identifiable {
+        let parent: NoteTask
+        var children: [NoteTask] = []
+        var id: Int64 { parent.id }
+    }
+
     private static let completedOptionsKey = "completedTaskOptions"
 
     @Published private(set) var lists: [TaskList]
@@ -47,28 +53,33 @@ final class NoteTasks: ObservableObject {
         defaults.set(completedOptions, forKey: Self.completedOptionsKey)
     }
 
-    var visibleTasks: [NoteTask] {
+    var visibleGroups: [TaskGroup] {
         let hide = completedOption(.hide)
         let moveToBottom = completedOption(.moveToBottom)
-        guard hide || moveToBottom else { return tasks }
 
-        // Apply the same stable partition to whole parent groups and to their children.
         func arranged<T>(_ items: [T], isCompleted: (T) -> Bool) -> [T] {
+            guard hide || moveToBottom else { return items }
             let open = items.filter { !isCompleted($0) }
             return hide ? open : open + items.filter(isCompleted)
         }
 
-        var groups: [[NoteTask]] = []
+        var groups: [TaskGroup] = []
         for task in tasks {
             if task.indentLevel == 0 || groups.isEmpty {
-                groups.append([task])
+                groups.append(TaskGroup(parent: task))
             } else {
-                groups[groups.count - 1].append(task)
+                groups[groups.count - 1].children.append(task)
             }
         }
-        return arranged(groups) { $0.first?.isCompleted == true }.flatMap { group -> [NoteTask] in
-            guard let parent = group.first else { return [] }
-            return [parent] + arranged(Array(group.dropFirst()), isCompleted: \.isCompleted)
+        return arranged(groups) { $0.parent.isCompleted }.map { group in
+            TaskGroup(parent: group.parent, children: arranged(group.children, isCompleted: \.isCompleted))
+        }
+    }
+
+    func moveTask(_ id: Int64, to destination: TaskDropPosition) {
+        update {
+            try store.moveTask(id, to: destination.listID, parentID: destination.parentID,
+                               beforeTaskID: destination.beforeTaskID)
         }
     }
 
@@ -120,9 +131,9 @@ final class NoteTasks: ObservableObject {
         renamedTitle = ""
     }
 
-    func add(_ text: String) -> Bool {
+    func add(_ text: String, parentID: Int64? = nil) -> Bool {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
-        return update { try store.addTask(text, to: list.id) }
+        return update { try store.addTask(text, to: list.id, parentID: parentID) }
     }
 
     func toggle(_ task: NoteTask) {

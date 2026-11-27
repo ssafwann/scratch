@@ -2,12 +2,15 @@ import ScratchData
 import SwiftUI
 
 struct TaskRow: View {
+    static let subtaskIndent: CGFloat = 24
+
     let task: NoteTask
     @ObservedObject var note: NoteTasks
     let palette: NotePalette
     let isFocused: Bool
 
     @State private var isHovered = false
+    @Environment(TaskDrag.self) private var drag
 
     private var markdown: AttributedString {
         var text = (try? AttributedString(
@@ -44,6 +47,16 @@ struct TaskRow: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .onTapGesture { note.beginEditing(task) }
+                    .simultaneousGesture(
+                        DragGesture(minimumDistance: 6, coordinateSpace: .named(TaskDrag.coordinateSpace))
+                            .onChanged { value in
+                                guard isFocused else { return }
+                                drag.update(task: task, at: value.location, note: note)
+                            }
+                            .onEnded { value in
+                                drag.finish(at: value.location, note: note)
+                            }
+                    )
                     .accessibilityActions {
                         if isFocused {
                             Button("Edit task") { note.beginEditing(task) }
@@ -64,13 +77,14 @@ struct TaskRow: View {
             .buttonStyle(.plain)
             .foregroundStyle(palette.accent.opacity(0.7))
             .accessibilityLabel("Delete task")
-            .opacity(isFocused && isHovered ? 1 : 0)
-            .allowsHitTesting(isFocused && isHovered)
-            .accessibilityHidden(!isFocused || !isHovered)
+            .opacity(isFocused && isHovered && drag.taskID == nil ? 1 : 0)
+            .allowsHitTesting(isFocused && isHovered && drag.taskID == nil)
+            .accessibilityHidden(!isFocused || !isHovered || drag.taskID != nil)
         }
-        .padding(.leading, task.indentLevel == 1 ? 24 : 0)
+        .padding(.leading, task.indentLevel == 1 ? Self.subtaskIndent : 0)
         .contentShape(Rectangle())
         .onHover { isHovered = $0 }
+        .opacity(drag.taskID == task.id ? 0.4 : 1)
     }
 
     private func checkbox(label: String) -> some View {
