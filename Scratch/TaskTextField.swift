@@ -7,11 +7,13 @@ struct TaskTextField: View {
     let palette: NotePalette
     var autofocus = false
     var singleLine = false
+    var isEnabled = true
     var cancel: (() -> Void)?
     let submit: () -> Void
 
     var body: some View {
         Editor(text: $text, palette: palette, label: placeholder, autofocus: autofocus, singleLine: singleLine,
+               isEnabled: isEnabled,
                cancel: cancel, submit: submit)
             .overlay(alignment: .topLeading) {
                 if text.isEmpty {
@@ -32,6 +34,7 @@ private struct Editor: NSViewRepresentable {
     let label: String
     let autofocus: Bool
     let singleLine: Bool
+    let isEnabled: Bool
     let cancel: (() -> Void)?
     let submit: () -> Void
 
@@ -69,6 +72,11 @@ private struct Editor: NSViewRepresentable {
         context.coordinator.text = $text
         editor.submit = submit
         editor.cancel = cancel
+        if !isEnabled, editor.window?.firstResponder === editor {
+            editor.window?.makeFirstResponder(nil)
+        }
+        editor.isEditable = isEnabled
+        editor.isSelectable = isEnabled
         editor.textColor = NSColor(palette.ink)
         editor.insertionPointColor = NSColor(palette.accent)
         if editor.string != text {

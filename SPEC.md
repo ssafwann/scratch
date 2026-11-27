@@ -12,10 +12,10 @@
 - Six lists exist from first launch, all named Untitled. Each list has an automatically assigned color. Click the title to rename the list. Cmd+1–6 switches lists.
 - Left-align the title. Show the uncompleted count at the right when unfocused.
 - When focused, show the toolbar above the title row and right-align the tab dots on the title row. Hovering over a dot previews that list's name in the title.
-- Extend the focused window above and below the note for the toolbar and task input. Keep the title and task viewport in place when there is room on screen.
+- Animate the toolbar and task input outward on focus and inward on blur over 180 ms. Keep the title and task viewport anchored during the animation.
 - The toolbar has pin, close, light/dark, completed filter, clear completed, and collapse controls. Pin and close stay visible in the toolbar. Cmd+W closes the app.
 - The completed filter menu offers Hide completed and Move completed to bottom. Show the wand-sparkles clear control only when the list has completed tasks.
-- Collapse the note to a single bar showing the list name and a pill with the uncompleted count.
+- Animate collapse into a single 34-point row with the list name and uncompleted count. Click the row to expand.
 
 ## Tasks
 
