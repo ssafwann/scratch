@@ -15,11 +15,6 @@ struct ListTabs: View {
                 .foregroundStyle(palette.ink)
                 .lineLimit(1)
                 .layoutPriority(1)
-            Text(note.tasks.count, format: .number)
-                .font(.system(size: 11).monospacedDigit())
-                .foregroundStyle(palette.accent.opacity(0.75))
-                .fixedSize()
-                .accessibilityLabel("\(note.tasks.count) tasks")
             if isFocused {
                 HStack(spacing: 0) {
                     ForEach(note.lists.indices, id: \.self) { index in

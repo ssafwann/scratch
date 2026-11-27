@@ -10,7 +10,7 @@
 - One AppKit `NSPanel` owns the frame, window level, Spaces behavior, and key state. SwiftUI renders the contents.
 - Remember the window position and size. Pin the note above other windows by default.
 - Six lists exist from first launch, all named Untitled. Each list has an automatically assigned color. Click the title to rename the list. Cmd+1–6 switches lists.
-- Keep the title anchored at the top left. Show the task count next to the list name and the uncompleted count at the right when unfocused.
+- Keep the title anchored at the top left. Show the uncompleted count at the right when unfocused.
 - Show tab dots beside the title only when focused. Hovering over a dot previews that list's name in the title.
 - The focused toolbar has pin, close, light/dark, completed filter, clear completed, and collapse controls. Pin and close stay visible in the toolbar. Cmd+W closes the app.
 - The completed filter menu offers Hide completed and Move completed to bottom. Show the wand-sparkles clear control only when the list has completed tasks.
