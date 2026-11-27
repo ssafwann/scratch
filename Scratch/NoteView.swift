@@ -12,16 +12,13 @@ final class NotePresentation: ObservableObject {
 
 struct NoteView: View {
     @ObservedObject var presentation: NotePresentation
+    @ObservedObject var note: NoteTasks
     let togglePin: () -> Void
     let close: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
 
-    private let tasks = [
-        SampleTask(text: "Review this week’s priorities"),
-        SampleTask(text: "Pick up a notebook"),
-        SampleTask(text: "Send meeting notes", completed: true)
-    ]
+    @State private var newTask = ""
 
     private var palette: NotePalette {
         colorScheme == .dark ? .dark : .light
@@ -36,8 +33,8 @@ struct NoteView: View {
                 .padding(.horizontal, 14)
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
-                    ForEach(tasks) { task in
-                        SampleTaskRow(task: task, palette: palette)
+                    ForEach(note.tasks) { task in
+                        TaskRow(task: task, note: note, palette: palette, isFocused: presentation.isFocused)
                     }
                 }
                 .padding(.horizontal, 14)
@@ -45,6 +42,9 @@ struct NoteView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .scrollIndicators(.hidden)
+            if presentation.isFocused {
+                footer
+            }
         }
         .background(palette.paper)
         .clipShape(.rect(cornerRadius: 12))
@@ -58,22 +58,22 @@ struct NoteView: View {
 
     private var header: some View {
         HStack(spacing: 6) {
-            Text("Untitled")
+            Text(note.list.name)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(palette.ink)
                 .lineLimit(1)
                 .layoutPriority(1)
-            Text(tasks.count, format: .number)
+            Text(note.tasks.count, format: .number)
                 .font(.system(size: 11))
                 .foregroundStyle(palette.accent.opacity(0.75))
-                .accessibilityLabel("\(tasks.count) tasks")
+                .accessibilityLabel("\(note.tasks.count) tasks")
             Spacer()
             if presentation.isFocused {
                 panelButton("pin", label: presentation.isPinned ? "Unpin Note" : "Pin Note", action: togglePin)
                     .opacity(presentation.isPinned ? 1 : 0.6)
                 panelButton("x", label: "Close", action: close)
             } else {
-                let remaining = tasks.filter { !$0.completed }.count
+                let remaining = note.tasks.filter { !$0.isCompleted }.count
                 Text(remaining, format: .number)
                     .font(.system(size: 11, weight: .medium).monospacedDigit())
                     .foregroundStyle(palette.accent)
@@ -84,6 +84,26 @@ struct NoteView: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 38)
+    }
+
+    private var footer: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Rectangle()
+                .fill(palette.accent.opacity(0.22))
+                .frame(height: 0.5)
+            TaskTextField(placeholder: "Add task…", text: $newTask, palette: palette) {
+                guard note.finishEditing(), note.add(newTask) else { return }
+                newTask = ""
+            }
+            .padding(.vertical, 10)
+            if let error = note.errorMessage {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(palette.ink)
+                    .padding(.bottom, 8)
+            }
+        }
+        .padding(.horizontal, 14)
     }
 
     private func panelButton(_ icon: String, label: String, action: @escaping () -> Void) -> some View {
@@ -102,46 +122,7 @@ struct NoteView: View {
     }
 }
 
-private struct SampleTask: Identifiable {
-    let text: String
-    var completed = false
-
-    var id: String { text }
-}
-
-private struct SampleTaskRow: View {
-    let task: SampleTask
-    let palette: NotePalette
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            RoundedRectangle(cornerRadius: 3)
-                .strokeBorder(palette.accent, lineWidth: 1.5)
-                .overlay {
-                    if task.completed {
-                        Path { path in
-                            path.move(to: CGPoint(x: 3.5, y: 7))
-                            path.addLine(to: CGPoint(x: 6, y: 9.5))
-                            path.addLine(to: CGPoint(x: 10.5, y: 4.5))
-                        }
-                        .stroke(palette.accent, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
-                    }
-                }
-                .frame(width: 14, height: 14)
-                .padding(.top, 2)
-                .accessibilityHidden(true)
-            Text(task.text)
-                .font(.system(size: 14))
-                .strikethrough(task.completed)
-                .foregroundStyle(task.completed ? palette.ink.opacity(0.55) : palette.ink)
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(task.text)
-        .accessibilityValue(task.completed ? "Completed" : "Uncompleted")
-    }
-}
-
-private struct NotePalette {
+struct NotePalette {
     let paper: Color
     let ink: Color
     let accent: Color
