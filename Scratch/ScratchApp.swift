@@ -29,14 +29,12 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.terminate(nil)
             return
         }
-        let note = NoteWindowController(note: tasks)
+        let note = NoteWindowController(note: tasks) {
+            NSApp.terminate(nil)
+        }
         self.note = note
         note.showWindow(nil)
         note.window?.makeKeyAndOrderFront(nil)
-    }
-
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        true
     }
 
     private func installMainMenu() {
