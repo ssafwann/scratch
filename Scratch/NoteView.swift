@@ -61,6 +61,7 @@ struct NoteView: View {
             Text("Untitled")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(palette.ink)
+                .lineLimit(1)
                 .layoutPriority(1)
             Text(tasks.count, format: .number)
                 .font(.system(size: 11))

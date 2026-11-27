@@ -43,7 +43,6 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
         panel.isFloatingPanel = false
         panel.level = pinned ? .floating : .normal
         panel.isMovableByWindowBackground = true
-        panel.minSize = Self.minimumSize
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true
@@ -55,6 +54,8 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
         ))
         hostingView.sizingOptions = []
         panel.contentView = hostingView
+        panel.contentMinSize = Self.minimumSize
+        panel.minSize = Self.minimumSize
         restoreFrame(of: panel)
     }
 
@@ -79,10 +80,21 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
         saveFrame()
     }
 
+    func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
+        Self.clampedSize(frameSize)
+    }
+
     func windowDidResize(_ notification: Notification) {
-        if window?.inLiveResize == false {
-            saveFrame()
+        guard let window else { return }
+        let frame = window.frame
+        let size = Self.clampedSize(frame.size)
+        if frame.size != size {
+            // Window managers can set a frame without going through live resize.
+            let correctedFrame = NSRect(x: frame.minX, y: frame.maxY - size.height,
+                                        width: size.width, height: size.height)
+            window.setFrame(correctedFrame, display: true)
         }
+        if !window.inLiveResize { saveFrame() }
     }
 
     func windowWillClose(_ notification: Notification) {
@@ -107,7 +119,7 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
         }
 
         let frame = NSRectFromString(saved)
-        guard frame.width >= Self.minimumSize.width, frame.height >= Self.minimumSize.height,
+        guard !frame.isEmpty,
               let screen = NSScreen.screens.max(by: {
                   let first = $0.visibleFrame.intersection(frame)
                   let second = $1.visibleFrame.intersection(frame)
@@ -119,10 +131,14 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
         }
 
         let bounds = screen.visibleFrame
-        let width = min(frame.width, bounds.width)
-        let height = min(frame.height, bounds.height)
-        let x = min(max(frame.minX, bounds.minX), bounds.maxX - width)
-        let y = min(max(frame.maxY - height, bounds.minY), bounds.maxY - height)
-        panel.setFrame(NSRect(x: x, y: y, width: width, height: height), display: false)
+        let size = Self.clampedSize(NSSize(width: min(frame.width, bounds.width),
+                                          height: min(frame.height, bounds.height)))
+        let x = max(bounds.minX, min(frame.minX, bounds.maxX - size.width))
+        let y = max(bounds.minY, min(frame.maxY - size.height, bounds.maxY - size.height))
+        panel.setFrame(NSRect(x: x, y: y, width: size.width, height: size.height), display: false)
+    }
+
+    private static func clampedSize(_ size: NSSize) -> NSSize {
+        NSSize(width: max(size.width, minimumSize.width), height: max(size.height, minimumSize.height))
     }
 }
