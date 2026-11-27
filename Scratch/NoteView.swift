@@ -88,7 +88,7 @@ struct NoteView: View {
     }
 
     private var taskList: some View {
-        ScrollView {
+        NoteScrollView(accent: palette.accent) {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(note.visibleGroups) { group in
                     TaskGroupView(group: group, note: note, palette: palette, isFocused: presentation.isFocused)
@@ -98,7 +98,6 @@ struct NoteView: View {
             .padding(.vertical, 7)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .scrollIndicators(.hidden)
         .id(note.list.id)
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(TaskDrag.coordinateSpace)) } action: {
             drag.viewport = $0

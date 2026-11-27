@@ -8,6 +8,8 @@ Scratch targets macOS 14 and later on Apple silicon and Intel. See the [product 
 
 Open `Scratch.xcodeproj` in Xcode, select the Scratch scheme, and press Cmd+R.
 
+Enable or disable login startup from **Scratch → Launch at Login**.
+
 Run the data-layer tests with `swift test --package-path ScratchData`.
 
 ## License
