@@ -5,7 +5,6 @@ struct ListTabs: View {
     let palette: NotePalette
     let isFocused: Bool
 
-    @Environment(\.colorScheme) private var colorScheme
     @State private var hoveredIndex: Int?
 
     var body: some View {
@@ -58,9 +57,10 @@ struct ListTabs: View {
             note.selectList(at: index)
         } label: {
             Circle()
-                .fill(NotePalette.forList(at: index, colorScheme: colorScheme).accent)
-                .opacity(selected || hovered ? 1 : 0.55)
-                .frame(width: selected || hovered ? 8 : 6, height: selected || hovered ? 8 : 6)
+                .fill(palette.accent)
+                .opacity(hovered ? 0.85 : selected ? 1 : 0.3)
+                .frame(width: 6, height: 6)
+                .scaleEffect(hovered ? 1.35 : 1)
                 .frame(width: 14, height: 28)
                 .contentShape(Rectangle())
         }
