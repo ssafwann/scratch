@@ -62,7 +62,22 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
         editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
         editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         editItem.submenu = editMenu
+
+        let listsItem = NSMenuItem(title: "List", action: nil, keyEquivalent: "")
+        mainMenu.addItem(listsItem)
+        let listsMenu = NSMenu(title: "List")
+        for number in 1...6 {
+            let item = listsMenu.addItem(withTitle: "Switch to List \(number)", action: #selector(selectList(_:)),
+                                         keyEquivalent: String(number))
+            item.tag = number - 1
+            item.target = self
+        }
+        listsItem.submenu = listsMenu
         NSApp.mainMenu = mainMenu
+    }
+
+    @objc private func selectList(_ sender: NSMenuItem) {
+        note?.selectList(at: sender.tag)
     }
 
     @objc private func closeNote() {

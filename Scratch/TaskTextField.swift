@@ -6,16 +6,19 @@ struct TaskTextField: View {
     @Binding var text: String
     let palette: NotePalette
     var autofocus = false
+    var singleLine = false
+    var isEnabled = true
     var cancel: (() -> Void)?
     let submit: () -> Void
 
     var body: some View {
-        Editor(text: $text, palette: palette, label: placeholder, autofocus: autofocus,
+        Editor(text: $text, palette: palette, label: placeholder, autofocus: autofocus, singleLine: singleLine,
+               isEnabled: isEnabled,
                cancel: cancel, submit: submit)
             .overlay(alignment: .topLeading) {
                 if text.isEmpty {
                     Text(placeholder)
-                        .font(.system(size: 14))
+                        .font(singleLine ? .system(size: 13, weight: .semibold) : .system(size: 14))
                         .foregroundStyle(palette.accent.opacity(0.65))
                         .padding(.top, 1)
                         .allowsHitTesting(false)
@@ -30,6 +33,8 @@ private struct Editor: NSViewRepresentable {
     let palette: NotePalette
     let label: String
     let autofocus: Bool
+    let singleLine: Bool
+    let isEnabled: Bool
     let cancel: (() -> Void)?
     let submit: () -> Void
 
@@ -44,7 +49,8 @@ private struct Editor: NSViewRepresentable {
         editor.isAutomaticTextReplacementEnabled = false
         editor.isAutomaticLinkDetectionEnabled = false
         editor.isContinuousSpellCheckingEnabled = false
-        editor.font = Self.font
+        editor.font = singleLine ? .systemFont(ofSize: 13, weight: .semibold) : Self.font
+        editor.singleLine = singleLine
         editor.drawsBackground = false
         editor.textContainerInset = .zero
         editor.textContainer?.lineFragmentPadding = 0
@@ -66,6 +72,11 @@ private struct Editor: NSViewRepresentable {
         context.coordinator.text = $text
         editor.submit = submit
         editor.cancel = cancel
+        if !isEnabled, editor.window?.firstResponder === editor {
+            editor.window?.makeFirstResponder(nil)
+        }
+        editor.isEditable = isEnabled
+        editor.isSelectable = isEnabled
         editor.textColor = NSColor(palette.ink)
         editor.insertionPointColor = NSColor(palette.accent)
         if editor.string != text {
@@ -75,6 +86,7 @@ private struct Editor: NSViewRepresentable {
 
     func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSScrollView, context: Context) -> CGSize? {
         guard let width = proposal.width, width > 0 else { return nil }
+        if singleLine { return CGSize(width: width, height: 17) }
         // A trailing newline adds an empty line. Include it in the measurement.
         let measuredText = text.hasSuffix("\n") ? text + " " : text
         let bounds = (measuredText as NSString).boundingRect(
@@ -105,6 +117,7 @@ private struct Editor: NSViewRepresentable {
 
 private final class TaskEditor: NSTextView {
     var autofocus = false
+    var singleLine = false
     var submit: (() -> Void)?
     var cancel: (() -> Void)?
 
@@ -113,13 +126,13 @@ private final class TaskEditor: NSTextView {
         guard autofocus, window != nil else { return }
         Task { @MainActor [weak self] in
             guard let self, window?.isKeyWindow == true else { return }
-            window?.makeFirstResponder(self)
+            if window?.makeFirstResponder(self) == true, singleLine { selectAll(nil) }
         }
     }
 
     override func keyDown(with event: NSEvent) {
         if !hasMarkedText(), let key = event.charactersIgnoringModifiers, key == "\r" || key == "\u{3}" {
-            if event.modifierFlags.contains(.shift) {
+            if event.modifierFlags.contains(.shift), !singleLine {
                 insertText("\n", replacementRange: selectedRange())
             } else {
                 submit?()
