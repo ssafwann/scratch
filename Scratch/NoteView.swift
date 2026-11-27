@@ -2,6 +2,9 @@ import SwiftUI
 
 @MainActor
 final class NotePresentation: ObservableObject {
+    static let toolbarHeight: CGFloat = 38
+    static let footerHeight: CGFloat = 40
+
     @Published var isFocused = false
     @Published var isPinned: Bool
 
@@ -15,6 +18,7 @@ struct NoteView: View {
     @ObservedObject var note: NoteTasks
     let togglePin: () -> Void
     let close: () -> Void
+    let resizeFooter: (CGFloat) -> Void
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -48,6 +52,8 @@ struct NoteView: View {
             .id(note.list.id)
             if presentation.isFocused {
                 footer
+                    .fixedSize(horizontal: false, vertical: true)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { resizeFooter($0) }
             }
         }
         .background(palette.paper)
@@ -87,7 +93,7 @@ struct NoteView: View {
             panelButton("x", label: "Close", action: close)
         }
         .padding(.horizontal, 14)
-        .frame(height: 38)
+        .frame(height: NotePresentation.toolbarHeight)
     }
 
     private var footer: some View {
@@ -96,7 +102,7 @@ struct NoteView: View {
         return VStack(alignment: .leading, spacing: 0) {
             Rectangle()
                 .fill(palette.accent.opacity(0.22))
-                .frame(height: 0.5)
+                .frame(height: 1)
             TaskTextField(placeholder: "Add task…", text: draft, palette: palette) {
                 guard note.finishRenaming(), note.finishEditing(), note.add(draft.wrappedValue) else { return }
                 drafts.removeValue(forKey: listID)

@@ -16,6 +16,11 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
     private let defaults: UserDefaults
     private let presentation: NotePresentation
     private let note: NoteTasks
+    private var footerHeight = NotePresentation.footerHeight
+    private var topExtension: CGFloat = 0
+    private var bottomExtension: CGFloat = 0
+    private var screenOffset: CGFloat = 0
+    private var isUpdatingFrame = false
 
     init(note: NoteTasks, defaults: UserDefaults = .standard) {
         self.note = note
@@ -53,7 +58,10 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
             presentation: presentation,
             note: note,
             togglePin: { [weak self] in self?.togglePin() },
-            close: { [weak panel] in panel?.close() }
+            close: { [weak panel] in panel?.close() },
+            resizeFooter: { [weak self] height in
+                Task { @MainActor in self?.resizeFooter(to: height) }
+            }
         ))
         hostingView.sizingOptions = []
         panel.contentView = hostingView
@@ -68,16 +76,18 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func windowDidBecomeKey(_ notification: Notification) {
-        presentation.isFocused = true
+        setFocused(true)
     }
 
     func windowDidResignKey(_ notification: Notification) {
         note.finishRenaming()
         note.finishEditing()
-        presentation.isFocused = false
+        setFocused(false)
     }
 
     func windowDidMove(_ notification: Notification) {
+        guard !isUpdatingFrame else { return }
+        screenOffset = 0
         saveFrame()
     }
 
@@ -86,13 +96,13 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
-        Self.clampedSize(frameSize)
+        clampedWindowSize(frameSize)
     }
 
     func windowDidResize(_ notification: Notification) {
-        guard let window else { return }
+        guard !isUpdatingFrame, let window else { return }
         let frame = window.frame
-        let size = Self.clampedSize(frame.size)
+        let size = clampedWindowSize(frame.size)
         if frame.size != size {
             // Window managers can set a frame without going through live resize.
             let correctedFrame = NSRect(x: frame.minX, y: frame.maxY - size.height,
@@ -119,8 +129,53 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
     }
 
     private func saveFrame() {
+        guard !isUpdatingFrame, let window else { return }
+        defaults.set(NSStringFromRect(noteFrame(in: window.frame)), forKey: Self.frameKey)
+    }
+
+    private func setFocused(_ focused: Bool) {
+        guard presentation.isFocused != focused else { return }
+        setExtensions(top: focused ? NotePresentation.toolbarHeight : 0, bottom: focused ? footerHeight : 0)
+        presentation.isFocused = focused
+    }
+
+    private func resizeFooter(to height: CGFloat) {
+        guard presentation.isFocused, height > 0, height != footerHeight else { return }
+        footerHeight = height
+        setExtensions(top: topExtension, bottom: height)
+    }
+
+    private func setExtensions(top: CGFloat, bottom: CGFloat) {
         guard let window else { return }
-        defaults.set(NSStringFromRect(window.frame), forKey: Self.frameKey)
+        let noteFrame = noteFrame(in: window.frame)
+        var target = noteFrame
+        target.origin.y -= bottom
+        target.size.height += top + bottom
+        let unadjustedY = target.minY
+        if top > 0, let bounds = window.screen?.visibleFrame {
+            // Keep the controls on screen when the note is parked near an edge.
+            target.origin.y = min(max(target.minY, bounds.minY), bounds.maxY - target.height)
+        }
+
+        isUpdatingFrame = true
+        defer { isUpdatingFrame = false }
+        topExtension = top
+        bottomExtension = bottom
+        let minimum = clampedWindowSize(.zero)
+        window.minSize = minimum
+        window.contentMinSize = minimum
+        window.setFrame(target, display: true)
+        screenOffset = window.frame.minY - unadjustedY
+    }
+
+    private func noteFrame(in frame: NSRect) -> NSRect {
+        NSRect(x: frame.minX, y: frame.minY + bottomExtension - screenOffset,
+               width: frame.width, height: frame.height - topExtension - bottomExtension)
+    }
+
+    private func clampedWindowSize(_ size: NSSize) -> NSSize {
+        NSSize(width: max(size.width, Self.minimumSize.width),
+               height: max(size.height, Self.minimumSize.height + topExtension + bottomExtension))
     }
 
     private func restoreFrame(of panel: NSPanel) {
