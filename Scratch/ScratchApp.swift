@@ -1,5 +1,6 @@
 import AppKit
 import ScratchData
+import ServiceManagement
 
 @main
 @MainActor
@@ -15,7 +16,7 @@ enum ScratchApp {
 }
 
 @MainActor
-private final class AppDelegate: NSObject, NSApplicationDelegate {
+private final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var note: NoteWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -42,6 +43,10 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
         let appItem = NSMenuItem()
         mainMenu.addItem(appItem)
         let appMenu = NSMenu()
+        let launchAtLogin = appMenu.addItem(withTitle: "Launch at Login", action: #selector(toggleLaunchAtLogin),
+                                           keyEquivalent: "")
+        launchAtLogin.target = self
+        appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Quit Scratch", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu
 
@@ -72,6 +77,31 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         listsItem.submenu = listsMenu
         NSApp.mainMenu = mainMenu
+    }
+
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if menuItem.action == #selector(toggleLaunchAtLogin) {
+            let status = SMAppService.mainApp.status
+            menuItem.state = status == .enabled ? .on : status == .requiresApproval ? .mixed : .off
+        }
+        return true
+    }
+
+    @objc private func toggleLaunchAtLogin() {
+        let service = SMAppService.mainApp
+        do {
+            switch service.status {
+            case .enabled:
+                try service.unregister()
+            case .requiresApproval:
+                SMAppService.openSystemSettingsLoginItems()
+            default:
+                try service.register()
+                if service.status == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
+            }
+        } catch {
+            NSApp.presentError(error)
+        }
     }
 
     @objc private func selectList(_ sender: NSMenuItem) {
