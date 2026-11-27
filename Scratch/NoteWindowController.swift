@@ -72,6 +72,7 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func windowDidResignKey(_ notification: Notification) {
+        note.finishRenaming()
         note.finishEditing()
         presentation.isFocused = false
     }
@@ -102,8 +103,13 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
+        note.finishRenaming()
         note.finishEditing()
         saveFrame()
+    }
+
+    func selectList(at index: Int) {
+        note.selectList(at: index)
     }
 
     private func togglePin() {

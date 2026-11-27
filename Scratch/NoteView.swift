@@ -18,10 +18,10 @@ struct NoteView: View {
 
     @Environment(\.colorScheme) private var colorScheme
 
-    @State private var newTask = ""
+    @State private var drafts: [Int64: String] = [:]
 
     private var palette: NotePalette {
-        colorScheme == .dark ? .dark : .light
+        NotePalette.forList(at: note.activeIndex, colorScheme: colorScheme)
     }
 
     var body: some View {
@@ -42,6 +42,7 @@ struct NoteView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .scrollIndicators(.hidden)
+            .id(note.list.id)
             if presentation.isFocused {
                 footer
             }
@@ -58,15 +59,7 @@ struct NoteView: View {
 
     private var header: some View {
         HStack(spacing: 6) {
-            Text(note.list.name)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(palette.ink)
-                .lineLimit(1)
-                .layoutPriority(1)
-            Text(note.tasks.count, format: .number)
-                .font(.system(size: 11))
-                .foregroundStyle(palette.accent.opacity(0.75))
-                .accessibilityLabel("\(note.tasks.count) tasks")
+            ListTabs(note: note, palette: palette, isFocused: presentation.isFocused)
             Spacer()
             if presentation.isFocused {
                 panelButton("pin", label: presentation.isPinned ? "Unpin Note" : "Pin Note", action: togglePin)
@@ -87,13 +80,15 @@ struct NoteView: View {
     }
 
     private var footer: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        let listID = note.list.id
+        let draft = Binding(get: { drafts[listID, default: ""] }, set: { drafts[listID] = $0 })
+        return VStack(alignment: .leading, spacing: 0) {
             Rectangle()
                 .fill(palette.accent.opacity(0.22))
                 .frame(height: 0.5)
-            TaskTextField(placeholder: "Add task…", text: $newTask, palette: palette) {
-                guard note.finishEditing(), note.add(newTask) else { return }
-                newTask = ""
+            TaskTextField(placeholder: "Add task…", text: draft, palette: palette) {
+                guard note.finishRenaming(), note.finishEditing(), note.add(draft.wrappedValue) else { return }
+                drafts.removeValue(forKey: listID)
             }
             .padding(.vertical, 10)
             if let error = note.errorMessage {
@@ -119,22 +114,5 @@ struct NoteView: View {
         .foregroundStyle(palette.accent)
         .accessibilityLabel(label)
         .help(label)
-    }
-}
-
-struct NotePalette {
-    let paper: Color
-    let ink: Color
-    let accent: Color
-
-    static let light = NotePalette(paper: rgb(0xEEEDFE), ink: rgb(0x26215C), accent: rgb(0x3C3489))
-    static let dark = NotePalette(paper: rgb(0x26215C), ink: rgb(0xEEEDFE), accent: rgb(0xCECBF6))
-
-    private static func rgb(_ hex: UInt32) -> Color {
-        Color(
-            red: Double((hex >> 16) & 255) / 255,
-            green: Double((hex >> 8) & 255) / 255,
-            blue: Double(hex & 255) / 255
-        )
     }
 }
