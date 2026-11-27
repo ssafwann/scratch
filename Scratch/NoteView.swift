@@ -34,9 +34,12 @@ struct NoteView: View {
     let toggleCollapse: () -> Void
     let resizeFooter: (CGFloat) -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorScheme) private var systemColorScheme
+    @AppStorage("noteAppearance") private var appearance = NoteAppearance.system
 
     @State private var drafts: [Int64: String] = [:]
+
+    private var colorScheme: ColorScheme { appearance.colorScheme ?? systemColorScheme }
 
     private var palette: NotePalette {
         NotePalette.forList(at: note.activeIndex, colorScheme: colorScheme)
@@ -79,7 +82,7 @@ struct NoteView: View {
     private var taskList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
-                ForEach(note.tasks) { task in
+                ForEach(note.visibleTasks) { task in
                     TaskRow(task: task, note: note, palette: palette, isFocused: presentation.isFocused)
                 }
             }
@@ -106,7 +109,10 @@ struct NoteView: View {
         return Color.clear
             .frame(height: height)
             .overlay(alignment: .bottom) {
-                toolbar
+                NoteToolbar(note: note, palette: palette, isDark: colorScheme == .dark,
+                            isPinned: presentation.isPinned,
+                            toggleAppearance: { appearance = colorScheme == .dark ? .light : .dark },
+                            toggleCollapse: toggleCollapse, togglePin: togglePin, close: close)
                     .frame(height: visibleHeight)
                     .clipped()
                     .opacity(presentation.showsEdges ? 1 : 0)
@@ -176,17 +182,6 @@ struct NoteView: View {
             .accessibilityLabel("\(remaining) uncompleted tasks")
     }
 
-    private var toolbar: some View {
-        HStack(spacing: 6) {
-            Spacer()
-            panelButton("chevron-up", label: "Collapse Note", action: toggleCollapse)
-            panelButton("pin", label: presentation.isPinned ? "Unpin Note" : "Pin Note", action: togglePin)
-                .opacity(presentation.isPinned ? 1 : 0.6)
-            panelButton("x", label: "Close", action: close)
-        }
-        .padding(.horizontal, 14)
-    }
-
     private var footer: some View {
         let listID = note.list.id
         let draft = Binding(get: { drafts[listID, default: ""] }, set: { drafts[listID] = $0 })
@@ -208,19 +203,16 @@ struct NoteView: View {
         }
         .padding(.horizontal, 14)
     }
+}
 
-    private func panelButton(_ icon: String, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(icon)
-                .resizable()
-                .renderingMode(.template)
-                .frame(width: 16, height: 16)
-                .frame(width: 26, height: 26)
-                .contentShape(Rectangle())
+private enum NoteAppearance: String {
+    case system, light, dark
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(palette.accent)
-        .accessibilityLabel(label)
-        .help(label)
     }
 }

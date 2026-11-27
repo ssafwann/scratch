@@ -24,6 +24,7 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
     private let defaults: UserDefaults
     private let presentation: NotePresentation
     private let note: NoteTasks
+    private let didClose: () -> Void
     private var footerHeight = NotePresentation.footerHeight
     private var expandedHeight: CGFloat = 382
     private var transitionID = 0
@@ -31,9 +32,10 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
 
     private var isUpdatingFrame: Bool { (window as? NotePanel)?.isAdjustingNoteFrame == true }
 
-    init(note: NoteTasks, defaults: UserDefaults = .standard) {
+    init(note: NoteTasks, defaults: UserDefaults = .standard, didClose: @escaping () -> Void) {
         self.note = note
         self.defaults = defaults
+        self.didClose = didClose
         let pinned = defaults.object(forKey: Self.pinnedKey) as? Bool ?? true
         presentation = NotePresentation(isPinned: pinned)
 
@@ -125,6 +127,7 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
         note.finishRenaming()
         note.finishEditing()
         saveFrame()
+        DispatchQueue.main.async { [weak self] in self?.didClose() }
     }
 
     func selectList(at index: Int) {
