@@ -1,4 +1,5 @@
 import AppKit
+import ScratchData
 
 @main
 @MainActor
@@ -16,12 +17,20 @@ enum ScratchApp {
 @MainActor
 private final class AppDelegate: NSObject, NSApplicationDelegate {
     private var note: NoteWindowController?
+    private var taskStore: TaskStore?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         installMainMenu()
+        NSApp.activate()
+        do {
+            taskStore = try TaskStore.openDefault()
+        } catch {
+            NSApp.presentError(error)
+            NSApp.terminate(nil)
+            return
+        }
         let note = NoteWindowController()
         self.note = note
-        NSApp.activate()
         note.showWindow(nil)
         note.window?.makeKeyAndOrderFront(nil)
     }

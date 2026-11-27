@@ -4,6 +4,9 @@
 	classes = {};
 	objectVersion = 77;
 	objects = {
+		180001000000000000000016 = {isa = XCLocalSwiftPackageReference; relativePath = ScratchData; };
+		180001000000000000000017 = {isa = XCSwiftPackageProductDependency; package = 180001000000000000000016; productName = ScratchData; };
+		180001000000000000000018 = {isa = PBXBuildFile; productRef = 180001000000000000000017; };
 
 /* Begin PBXFileReference section */
 		180001000000000000000001 = {isa = PBXFileReference; explicitFileType = wrapper.application; path = Scratch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -36,6 +39,7 @@
 			dependencies = ();
 			fileSystemSynchronizedGroups = (180001000000000000000002,);
 			name = Scratch;
+			packageProductDependencies = (180001000000000000000017,);
 			productName = Scratch;
 			productReference = 180001000000000000000001;
 			productType = "com.apple.product-type.application";
@@ -51,6 +55,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (en, Base,);
 			mainGroup = 180001000000000000000003;
+			packageReferences = (180001000000000000000016,);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 180001000000000000000004;
 			projectDirPath = "";
@@ -60,7 +65,7 @@
 /* End PBXProject section */
 
 		180001000000000000000006 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-		180001000000000000000007 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		180001000000000000000007 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (180001000000000000000018,); runOnlyForDeploymentPostprocessing = 0; };
 		180001000000000000000008 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 
 /* Begin XCBuildConfiguration section */
