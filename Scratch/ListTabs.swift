@@ -16,6 +16,7 @@ struct ListTabs: View {
                 .lineLimit(1)
                 .layoutPriority(1)
             if isFocused {
+                Spacer(minLength: 0)
                 HStack(spacing: 0) {
                     ForEach(note.lists.indices, id: \.self) { index in
                         tab(at: index)

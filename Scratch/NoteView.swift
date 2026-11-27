@@ -26,6 +26,9 @@ struct NoteView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if presentation.isFocused {
+                toolbar
+            }
             header
             Rectangle()
                 .fill(palette.accent.opacity(0.22))
@@ -60,20 +63,28 @@ struct NoteView: View {
     private var header: some View {
         HStack(spacing: 6) {
             ListTabs(note: note, palette: palette, isFocused: presentation.isFocused)
-            Spacer()
-            if presentation.isFocused {
-                panelButton("pin", label: presentation.isPinned ? "Unpin Note" : "Pin Note", action: togglePin)
-                    .opacity(presentation.isPinned ? 1 : 0.6)
-                panelButton("x", label: "Close", action: close)
-            } else {
+            if !presentation.isFocused {
+                Spacer(minLength: 6)
                 let remaining = note.tasks.filter { !$0.isCompleted }.count
                 Text(remaining, format: .number)
                     .font(.system(size: 11, weight: .medium).monospacedDigit())
                     .foregroundStyle(palette.accent)
                     .frame(minWidth: 26, minHeight: 18)
                     .background(palette.accent.opacity(0.18), in: Capsule())
+                    .fixedSize()
                     .accessibilityLabel("\(remaining) uncompleted tasks")
             }
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 38)
+    }
+
+    private var toolbar: some View {
+        HStack(spacing: 6) {
+            Spacer()
+            panelButton("pin", label: presentation.isPinned ? "Unpin Note" : "Pin Note", action: togglePin)
+                .opacity(presentation.isPinned ? 1 : 0.6)
+            panelButton("x", label: "Close", action: close)
         }
         .padding(.horizontal, 14)
         .frame(height: 38)
