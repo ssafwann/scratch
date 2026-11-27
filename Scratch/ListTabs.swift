@@ -6,6 +6,7 @@ struct ListTabs: View {
     let isFocused: Bool
 
     @State private var hoveredIndex: Int?
+    @Environment(TaskDrag.self) private var drag
 
     var body: some View {
         HStack(spacing: 6) {
@@ -53,14 +54,15 @@ struct ListTabs: View {
     private func tab(at index: Int) -> some View {
         let selected = note.activeIndex == index
         let hovered = hoveredIndex == index
+        let targeted = drag.targetListID == note.lists[index].id
         return Button {
             note.selectList(at: index)
         } label: {
             Circle()
                 .fill(palette.accent)
-                .opacity(hovered ? 0.85 : selected ? 1 : 0.3)
+                .opacity(targeted || selected ? 1 : hovered ? 0.85 : 0.3)
                 .frame(width: 6, height: 6)
-                .scaleEffect(hovered ? 1.35 : 1)
+                .scaleEffect(targeted ? 1.9 : hovered ? 1.35 : 1)
                 .frame(width: 14, height: 28)
                 .contentShape(Rectangle())
         }
@@ -70,6 +72,9 @@ struct ListTabs: View {
         .onHover { inside in
             if inside { hoveredIndex = index }
             else if hoveredIndex == index { hoveredIndex = nil }
+        }
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(TaskDrag.coordinateSpace)) } action: {
+            drag.tabFrames[note.lists[index].id] = $0
         }
     }
 }
