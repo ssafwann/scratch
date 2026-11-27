@@ -15,8 +15,10 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
 
     private let defaults: UserDefaults
     private let presentation: NotePresentation
+    private let note: NoteTasks
 
-    init(defaults: UserDefaults = .standard) {
+    init(note: NoteTasks, defaults: UserDefaults = .standard) {
+        self.note = note
         self.defaults = defaults
         let pinned = defaults.object(forKey: Self.pinnedKey) as? Bool ?? true
         presentation = NotePresentation(isPinned: pinned)
@@ -49,6 +51,7 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
 
         let hostingView = NSHostingView(rootView: NoteView(
             presentation: presentation,
+            note: note,
             togglePin: { [weak self] in self?.togglePin() },
             close: { [weak panel] in panel?.close() }
         ))
@@ -69,6 +72,7 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func windowDidResignKey(_ notification: Notification) {
+        note.finishEditing()
         presentation.isFocused = false
     }
 
@@ -98,6 +102,7 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
+        note.finishEditing()
         saveFrame()
     }
 

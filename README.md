@@ -6,7 +6,7 @@ Scratch targets macOS 14 and later on Apple silicon and Intel. See the [product 
 
 ## Run from source
 
-Open `Scratch.xcodeproj` in Xcode, select the Scratch scheme, and press Cmd+R. The current panel spike uses sample tasks to exercise focus, pinning, and window restoration.
+Open `Scratch.xcodeproj` in Xcode, select the Scratch scheme, and press Cmd+R.
 
 Run the data-layer tests with `swift test --package-path ScratchData`.
 
